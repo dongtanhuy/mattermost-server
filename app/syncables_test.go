@@ -128,7 +128,7 @@ func TestPopulateSyncablesSince(t *testing.T) {
 		t.Errorf("error retrieving channel member: %s", err.Error())
 	}
 
-	tMembers, err := th.App.GetTeamMembers(singersTeam.Id, 0, 999)
+	tMembers, err := th.App.GetTeamMembers(singersTeam.Id, 0, 999, nil)
 	if err != nil {
 		t.Errorf("error retrieving team members: %s", err.Error())
 	}
@@ -157,7 +157,7 @@ func TestPopulateSyncablesSince(t *testing.T) {
 		t.Errorf("wrong error: %s", err.Id)
 	}
 
-	tMembers, err = th.App.GetTeamMembers(nerdsTeam.Id, 0, 999)
+	tMembers, err = th.App.GetTeamMembers(nerdsTeam.Id, 0, 999, nil)
 	if err != nil {
 		t.Errorf("error retrieving team members: %s", err.Error())
 	}
@@ -199,7 +199,7 @@ func TestPopulateSyncablesSince(t *testing.T) {
 		t.Errorf("wrong error: %s", err.Id)
 	}
 
-	tMembers, err = th.App.GetTeamMembers(nerdsTeam.Id, 0, 999)
+	tMembers, err = th.App.GetTeamMembers(nerdsTeam.Id, 0, 999, nil)
 	if err != nil {
 		t.Errorf("error retrieving team members: %s", err.Error())
 	}
