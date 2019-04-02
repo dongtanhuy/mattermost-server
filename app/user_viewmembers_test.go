@@ -25,8 +25,8 @@ func TestResctrictedViewMembers(t *testing.T) {
 	user3.Nickname = "test user3"
 	th.App.UpdateUser(user3, false)
 	user4 := th.CreateUser()
-	user4.Username = "test-user-3"
-	user4.Nickname = "test user3"
+	user4.Username = "test-user-4"
+	user4.Nickname = "test user4"
 	th.App.UpdateUser(user4, false)
 
 	// user1 is member of all the channels and teams because is the creator
@@ -62,13 +62,13 @@ func TestResctrictedViewMembers(t *testing.T) {
 				"without restrictions team1",
 				nil,
 				model.UserSearch{Term: "test", TeamId: team1.Id},
-				[]string{user1.Id, user2.Id},
+				[]string{user1.Id, user2.Id, user4.Id},
 			},
 			{
 				"without restrictions team2",
 				nil,
 				model.UserSearch{Term: "test", TeamId: team2.Id},
-				[]string{user3.Id},
+				[]string{user3.Id, user4.Id},
 			},
 			{
 				"with team restrictions with valid team",
@@ -76,7 +76,7 @@ func TestResctrictedViewMembers(t *testing.T) {
 					Teams: []string{team1.Id},
 				},
 				model.UserSearch{Term: "test", TeamId: team1.Id},
-				[]string{user1.Id, user2.Id},
+				[]string{user1.Id, user2.Id, user4.Id},
 			},
 			{
 				"with team restrictions with invalid team",
@@ -84,7 +84,7 @@ func TestResctrictedViewMembers(t *testing.T) {
 					Teams: []string{team1.Id},
 				},
 				model.UserSearch{Term: "test", TeamId: team2.Id},
-				[]string{},
+				[]string{user4.Id},
 			},
 			{
 				"with channel restrictions with valid team",
@@ -92,7 +92,7 @@ func TestResctrictedViewMembers(t *testing.T) {
 					Channels: []string{channel1.Id},
 				},
 				model.UserSearch{Term: "test", TeamId: team1.Id},
-				[]string{user1.Id},
+				[]string{user1.Id, user4.Id},
 			},
 			{
 				"with channel restrictions with invalid team",
@@ -100,7 +100,7 @@ func TestResctrictedViewMembers(t *testing.T) {
 					Channels: []string{channel1.Id},
 				},
 				model.UserSearch{Term: "test", TeamId: team2.Id},
-				[]string{},
+				[]string{user4.Id},
 			},
 			{
 				"with restricting everything",
@@ -138,13 +138,13 @@ func TestResctrictedViewMembers(t *testing.T) {
 				"without restrictions team1",
 				nil,
 				team1.Id,
-				[]string{user1.Id, user2.Id},
+				[]string{user1.Id, user2.Id, user4.Id},
 			},
 			{
 				"without restrictions team2",
 				nil,
 				team2.Id,
-				[]string{user3.Id},
+				[]string{user3.Id, user4.Id},
 			},
 			{
 				"with team restrictions with valid team",
@@ -152,7 +152,7 @@ func TestResctrictedViewMembers(t *testing.T) {
 					Teams: []string{team1.Id},
 				},
 				team1.Id,
-				[]string{user1.Id, user2.Id},
+				[]string{user1.Id, user2.Id, user4.Id},
 			},
 			{
 				"with team restrictions with invalid team",
@@ -160,7 +160,7 @@ func TestResctrictedViewMembers(t *testing.T) {
 					Teams: []string{team1.Id},
 				},
 				team2.Id,
-				[]string{},
+				[]string{user4.Id},
 			},
 			{
 				"with channel restrictions with valid team",
@@ -168,7 +168,7 @@ func TestResctrictedViewMembers(t *testing.T) {
 					Channels: []string{channel1.Id},
 				},
 				team1.Id,
-				[]string{user1.Id},
+				[]string{user1.Id, user4.Id},
 			},
 			{
 				"with channel restrictions with invalid team",
@@ -176,7 +176,7 @@ func TestResctrictedViewMembers(t *testing.T) {
 					Channels: []string{channel1.Id},
 				},
 				team2.Id,
-				[]string{},
+				[]string{user4.Id},
 			},
 			{
 				"with restricting everything",
@@ -196,6 +196,166 @@ func TestResctrictedViewMembers(t *testing.T) {
 				require.Nil(t, err)
 				ids := []string{}
 				for _, result := range results {
+					ids = append(ids, result.Id)
+				}
+				assert.ElementsMatch(t, tc.ExpectedResults, ids)
+			})
+		}
+	})
+
+	t.Run("AutocompleteUsersInTeam", func(t *testing.T) {
+		testCases := []struct {
+			Name            string
+			Restrictions    *model.ViewUsersRestrictions
+			TeamId          string
+			ExpectedResults []string
+		}{
+			{
+				"without restrictions team1",
+				nil,
+				team1.Id,
+				[]string{user1.Id, user2.Id, user4.Id},
+			},
+			{
+				"without restrictions team2",
+				nil,
+				team2.Id,
+				[]string{user3.Id, user4.Id},
+			},
+			{
+				"with team restrictions with valid team",
+				&model.ViewUsersRestrictions{
+					Teams: []string{team1.Id},
+				},
+				team1.Id,
+				[]string{user1.Id, user2.Id, user4.Id},
+			},
+			{
+				"with team restrictions with invalid team",
+				&model.ViewUsersRestrictions{
+					Teams: []string{team1.Id},
+				},
+				team2.Id,
+				[]string{user4.Id},
+			},
+			{
+				"with channel restrictions with valid team",
+				&model.ViewUsersRestrictions{
+					Channels: []string{channel1.Id},
+				},
+				team1.Id,
+				[]string{user1.Id, user4.Id},
+			},
+			{
+				"with channel restrictions with invalid team",
+				&model.ViewUsersRestrictions{
+					Channels: []string{channel1.Id},
+				},
+				team2.Id,
+				[]string{user4.Id},
+			},
+			{
+				"with restricting everything",
+				&model.ViewUsersRestrictions{
+					Channels: []string{},
+					Teams:    []string{},
+				},
+				team1.Id,
+				[]string{},
+			},
+		}
+
+		for _, tc := range testCases {
+			t.Run(tc.Name, func(t *testing.T) {
+				options := model.UserSearchOptions{Limit: 100, ViewRestrictions: tc.Restrictions}
+				results, err := th.App.AutocompleteUsersInTeam(tc.TeamId, "tes", &options)
+				require.Nil(t, err)
+				ids := []string{}
+				for _, result := range results.InTeam {
+					ids = append(ids, result.Id)
+				}
+				assert.ElementsMatch(t, tc.ExpectedResults, ids)
+			})
+		}
+	})
+
+	t.Run("AutocompleteUsersInChannel", func(t *testing.T) {
+		testCases := []struct {
+			Name            string
+			Restrictions    *model.ViewUsersRestrictions
+			TeamId          string
+			ChannelId       string
+			ExpectedResults []string
+		}{
+			{
+				"without restrictions channel1",
+				nil,
+				team1.Id,
+				channel1.Id,
+				[]string{user1.Id, user4.Id},
+			},
+			{
+				"without restrictions channel3",
+				nil,
+				team2.Id,
+				channel3.Id,
+				[]string{user1.Id, user3.Id, user4.Id},
+			},
+			{
+				"with team restrictions with valid team",
+				&model.ViewUsersRestrictions{
+					Teams: []string{team1.Id},
+				},
+				team1.Id,
+				channel1.Id,
+				[]string{user1.Id, user4.Id},
+			},
+			{
+				"with team restrictions with invalid team",
+				&model.ViewUsersRestrictions{
+					Teams: []string{team1.Id},
+				},
+				team2.Id,
+				channel3.Id,
+				[]string{user1.Id, user4.Id},
+			},
+			{
+				"with channel restrictions with valid team",
+				&model.ViewUsersRestrictions{
+					Channels: []string{channel1.Id},
+				},
+				team1.Id,
+				channel1.Id,
+				[]string{user1.Id, user4.Id},
+			},
+			{
+				"with channel restrictions with invalid team",
+				&model.ViewUsersRestrictions{
+					Channels: []string{channel1.Id},
+				},
+				team2.Id,
+				channel3.Id,
+				[]string{user1.Id, user4.Id},
+			},
+			{
+				"with restricting everything",
+				&model.ViewUsersRestrictions{
+					Channels: []string{},
+					Teams:    []string{},
+				},
+				team1.Id,
+				channel1.Id,
+				[]string{},
+			},
+		}
+
+		for _, tc := range testCases {
+			t.Run(tc.Name, func(t *testing.T) {
+				options := model.UserSearchOptions{Limit: 100, ViewRestrictions: tc.Restrictions}
+				results, err := th.App.AutocompleteUsersInChannel(tc.TeamId, tc.ChannelId, "tes", &options)
+				require.Nil(t, err)
+				ids := []string{}
+				for _, result := range results.InChannel {
 					ids = append(ids, result.Id)
 				}
 				assert.ElementsMatch(t, tc.ExpectedResults, ids)
